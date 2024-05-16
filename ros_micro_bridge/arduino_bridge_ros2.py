@@ -82,12 +82,12 @@ def get_value_from_jointstate(message:JointState,name_item:str,paramtype:int=0):
 
 class Ros2ArduinoBridge(Node):
     def __init__(self, *args, **kwargs):
-        print("Ros2ArduinoBridge __init__ entering")
+        print("Ros_ArduinoBridge __init__ entering")
         self.pub_telemetry = None
         self.pub_heading = None
         self.last_telem_message = 0
         self.last_actuation_reference_prio_message = 0
-        super().__init__('ros2arduino_bridge', *args, **kwargs)
+        super().__init__('ros_arduino_bridge', *args, **kwargs)
         self.actuation = [0.0,0.0,0.0,0.0,0.0]
 
         # If namespace is empty, throw warning. Common ones are e.g. RAS_TN_LB, RAS_TN_YE, RAS_GS, RAS_DELFIA_01 
@@ -104,6 +104,9 @@ class Ros2ArduinoBridge(Node):
         # Automatically try to detect the serial port and open it
         self._ser.port = auto_detect_serial()
         open_serial(self._ser)
+
+        # LogInfo the port we are using
+        self.get_logger().info(f"Using serial port: {self._ser.name}")
 
         self.diagnostics = Diagnostics()
 
