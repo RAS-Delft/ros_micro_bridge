@@ -18,7 +18,7 @@ Further functionalities that increase reliability, maintainability and ease-of-u
 Start it directly:
 ```shell
 # Make sure to have the ROS environment correctly set up
-ros2 run ras_low_level_bridge arduino_bridge_ros2
+ros2 run ros_micro_bridge arduino_bridge_ros2
 ```
 Or incorporate this into a launch structure. 
 

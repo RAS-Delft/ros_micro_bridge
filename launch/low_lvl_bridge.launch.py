@@ -11,7 +11,7 @@ def generate_launch_description():
 
     # Define the arduino_bridge_ros2 node
     arduino_bridge_node = Node(
-        package='ras_low_level_bridge',
+        package='ros_micro_bridge',
         executable='arduino_bridge_ros2',
         name='arduino_bridge',
         output='screen',

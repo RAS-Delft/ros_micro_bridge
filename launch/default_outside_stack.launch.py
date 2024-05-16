@@ -12,7 +12,7 @@ def generate_launch_description():
     # start gnss_bringup.launch.py
     gnss_launch = IncludeLaunchDescription(
       PythonLaunchDescriptionSource([os.path.join(
-         get_package_share_directory('ras_low_level_bridge'), 'launch'),
+         get_package_share_directory('ros_micro_bridge'), 'launch'),
          '/gnss_bringup.launch.py'])
     )
     ld.add_action(gnss_launch)
@@ -20,7 +20,7 @@ def generate_launch_description():
     # start lowl_lvl_bridge.launch.py
     lowl_lvl_launch = IncludeLaunchDescription(
       PythonLaunchDescriptionSource([os.path.join(
-         get_package_share_directory('ras_low_level_bridge'), 'launch'),
+         get_package_share_directory('ros_micro_bridge'), 'launch'),
          '/low_lvl_bridge.launch.py'])
     )
     ld.add_action(lowl_lvl_launch)

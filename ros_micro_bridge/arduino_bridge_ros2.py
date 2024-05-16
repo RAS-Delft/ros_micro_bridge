@@ -28,10 +28,10 @@ import serial
 import math
 import numpy as np
 
-import ras_low_level_bridge.global_state as globs
-from ras_low_level_bridge.global_state import GlobalState, Diagnostics
-from ras_low_level_bridge.HeadingUtils import HeadingStateEst
-from ras_low_level_bridge.serial_utils import MsgReceiver, reset_arduino, open_serial, auto_detect_serial
+import ros_micro_bridge.global_state as globs
+from ros_micro_bridge.global_state import GlobalState, Diagnostics
+from ros_micro_bridge.HeadingUtils import HeadingStateEst
+from ros_micro_bridge.serial_utils import MsgReceiver, reset_arduino, open_serial, auto_detect_serial
 
 ARDUINO_RUNTIME_TIMEOUT = 1000 * 1E6  # 1000 ms / 1 second
 ARDUINO_INIT_TIMEOUT = 6000 * 1E6  # 6000 ms / 6 seconds

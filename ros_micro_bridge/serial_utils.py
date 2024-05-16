@@ -5,8 +5,8 @@ import serial
 from enum import Enum, auto
 # import rospy
 
-import ras_low_level_bridge.global_state as globs
-from ras_low_level_bridge.global_state import GlobalState
+import ros_micro_bridge.global_state as globs
+from ros_micro_bridge.global_state import GlobalState
 
 
 class MsgReceiverState(Enum):
