@@ -20,8 +20,6 @@ import rclpy
 from rclpy.node import Node
 
 import time
-import warnings
-import os  # For getting operating system definitions such as vessel_ID
 
 from std_msgs.msg import Float32MultiArray, Float32
 from sensor_msgs.msg import Imu, JointState
@@ -34,14 +32,6 @@ import ras_low_level_bridge.global_state as globs
 from ras_low_level_bridge.global_state import GlobalState, Diagnostics
 from ras_low_level_bridge.HeadingUtils import HeadingStateEst
 from ras_low_level_bridge.serial_utils import MsgReceiver, reset_arduino, open_serial, auto_detect_serial
-
-# Gets the current vessel identifier from the operating system (e.g. RAS_TN_LB, RAS_TN_YE, RAS_GS, RAS_DELFIA_01 )
-# This should be set in .bashsrc
-VESSEL_ID = os.environ.get("VESSEL_ID", "unknown")
-if VESSEL_ID == "unknown":
-    warnings.warn("VESSEL_ID is not set in environment variables!")
-
-
 
 ARDUINO_RUNTIME_TIMEOUT = 1000 * 1E6  # 1000 ms / 1 second
 ARDUINO_INIT_TIMEOUT = 6000 * 1E6  # 6000 ms / 6 seconds
@@ -90,7 +80,6 @@ def get_value_from_jointstate(message:JointState,name_item:str,paramtype:int=0):
 	# In case the specified item is not in the list
 	return np.nan
 
-
 class Ros2ArduinoBridge(Node):
     def __init__(self, *args, **kwargs):
         print("Ros2ArduinoBridge __init__ entering")
@@ -98,8 +87,13 @@ class Ros2ArduinoBridge(Node):
         self.pub_heading = None
         self.last_telem_message = 0
         self.last_actuation_reference_prio_message = 0
-        super().__init__(VESSEL_ID+'_ros2arduino_bridge', *args, **kwargs)
+        super().__init__('ros2arduino_bridge', *args, **kwargs)
         self.actuation = [0.0,0.0,0.0,0.0,0.0]
+
+        # If namespace is empty, throw warning. Common ones are e.g. RAS_TN_LB, RAS_TN_YE, RAS_GS, RAS_DELFIA_01 
+        if self.get_namespace() == "":
+            self.get_logger().warn("Namespace is empty. This is not expected behavior.")
+        
 
         # Not setting the port here, we want to open the port manually later
         self._ser = serial.Serial(None, 115200, timeout=1)
@@ -114,10 +108,10 @@ class Ros2ArduinoBridge(Node):
         self.diagnostics = Diagnostics()
 
         self.get_logger().info("Start setting up subscribers and publishers")
-        self.sub_reference = self.create_subscription(JointState, f'/{VESSEL_ID}/reference/actuation', self.callback_control, 10)
-        self.sub_reference_prio = self.create_subscription(JointState, f'/{VESSEL_ID}/reference/actuation_prio', self.callback_control_prio, 10)
-        self.pub_telemetry = self.create_publisher(Float32MultiArray, f'/{VESSEL_ID}/telemetry', 10)
-        self.pub_heading = self.create_publisher(Float32, f'/{VESSEL_ID}/state/yaw', 10)
+        self.sub_reference = self.create_subscription(JointState, f'reference/actuation', self.callback_control, 10)
+        self.sub_reference_prio = self.create_subscription(JointState, f'reference/actuation_prio', self.callback_control_prio, 10)
+        self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry', 10)
+        self.pub_heading = self.create_publisher(Float32, f'state/yaw', 10)
         self.pub_imu = self.create_publisher(Imu,'telemetry/imu',10)
 
         self.get_logger().info("Done setting up subscribers and publishers")
