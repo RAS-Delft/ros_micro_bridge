@@ -4,6 +4,7 @@ import time
 import serial
 from enum import Enum, auto
 # import rospy
+from rclpy.node import Node
 
 import ros_micro_bridge.global_state as globs
 from ros_micro_bridge.global_state import GlobalState
@@ -117,7 +118,7 @@ def open_serial(serial: serial.Serial):
     print("[INFO] Waiting to receive a signal...")
 
 
-def auto_detect_serial():
+def auto_detect_serial(node_: Node):
     selected = None
     # Try to automatically select the correct serial port for the Arduino
     try:
@@ -128,13 +129,13 @@ def auto_detect_serial():
             match = re.match(match_string, p)
             if match is not None and match.group(1) == "Arduino":
                 selected = os.path.realpath(os.path.join(serial_path, p))
-                # rospy.loginfo(f"Found Arduino at {selected} with id {p}.")
-                print(f"[INFO] Found Arduino at {selected} with id {p}.")
+                node_.get_logger().info(f"Found Arduino at {selected} with id {p}.")
                 break
     except FileNotFoundError:
         pass
     if selected is None:
         selected = '/dev/ttyACM0'
         # rospy.logwarn(f"Could not autodetect Arduino in the system! Trying default {selected}.")
-        print(f"[INFO] Could not autodetect Arduino in the system! Trying default {selected}.")
+        #print(f"[INFO] Could not autodetect Arduino in the system! Trying default {selected}.")
+        node_.get_logger().info(f"Could not autodetect Arduino in the system! Trying default {selected}.")
     return selected

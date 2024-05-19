@@ -102,7 +102,7 @@ class Ros2ArduinoBridge(Node):
         self.heading_state_estimator = HeadingStateEst(4, 1*math.pi)
 
         # Automatically try to detect the serial port and open it
-        self._ser.port = auto_detect_serial()
+        self._ser.port = auto_detect_serial(self)
         open_serial(self._ser)
 
         # LogInfo the port we are using
