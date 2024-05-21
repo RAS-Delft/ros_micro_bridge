@@ -93,7 +93,16 @@ class Ros2ArduinoBridge(Node):
         # If namespace is empty, throw warning. Common ones are e.g. RAS_TN_LB, RAS_TN_YE, RAS_GS, RAS_DELFIA_01 
         if self.get_namespace() == "":
             self.get_logger().warn("Namespace is empty. This is not expected behavior.")
-        
+            self.namespace_prefix = ""
+        else:
+            self.namespace_prefix = self.get_namespace()
+
+
+        # Define parameter enable_microprocessor_serial_streaming
+        self.declare_parameter('enable_stream_microprocessor_serial', True)
+        self.declare_parameter('enable_stream_imu', True)
+        self.declare_parameter('enable_stream_heading', True)
+
 
         # Not setting the port here, we want to open the port manually later
         self._ser = serial.Serial(None, 115200, timeout=1)
@@ -113,9 +122,15 @@ class Ros2ArduinoBridge(Node):
         self.get_logger().info("Start setting up subscribers and publishers")
         self.sub_reference = self.create_subscription(JointState, f'reference/actuation', self.callback_control, 10)
         self.sub_reference_prio = self.create_subscription(JointState, f'reference/actuation_prio', self.callback_control_prio, 10)
-        self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry', 10)
-        self.pub_heading = self.create_publisher(Float32, f'state/yaw', 10)
-        self.pub_imu = self.create_publisher(Imu,'telemetry/imu',10)
+
+        if self.get_parameter('enable_stream_microprocessor_serial').value:
+            self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry', 10)
+
+        if self.get_parameter('enable_stream_heading').value:
+            self.pub_heading = self.create_publisher(Float32, f'state/yaw', 10)
+
+        if self.get_parameter('enable_stream_imu').value:
+            self.pub_imu = self.create_publisher(Imu,'telemetry/imu',10)
 
         self.get_logger().info("Done setting up subscribers and publishers")
         self.get_logger().info("Running main loop now")
@@ -243,38 +258,52 @@ class Ros2ArduinoBridge(Node):
         :return:
         """
 
-        # print("telemetry: ", serial_msg)
-        # Get numbers from string
-
         parsed_nums = []
         try:
             nums = message.split(";")
             parsed_nums = [float(x) for x in nums]
-
-            # Create and send ros telemetry
-            msg_telemetry = Float32MultiArray()
-            msg_telemetry.data = parsed_nums
-            self.pub_telemetry.publish(msg_telemetry)
-            print(f"--[telem] '{message[0:-1]}'", sep='')
         except:
             print(f"callback_telemetry failed to process serial_message '{message}'")
 
-        try:
-            # estimate heading and publish
-            msg_heading = Float32()
-            msg_heading.data = self.heading_state_estimator.process_magnetometer_data(parsed_nums[16], parsed_nums[17])
-            # index 16 and 17 of telemetry refer to x and y potential field measured by the BNO055 magnetometer
-            self.pub_heading.publish(msg_heading)
+        # Publish telemetry data
+        if self.get_parameter('enable_stream_microprocessor_serial').value:
+            self.publish_serial_telemetry(parsed_nums)
 
+        # Publish IMU data
+        if self.get_parameter('enable_stream_imu').value:
+            self.publish_imu(parsed_nums)
+
+        # Publish heading data
+        if self.get_parameter('enable_stream_heading').value:
+            self.publish_heading(parsed_nums)
+
+    def publish_serial_telemetry(self, parsed_nums):
+        """
+        Send the data received from the serial port to ROS
+        """
+
+        msg_telemetry = Float32MultiArray()
+        msg_telemetry.data = parsed_nums
+        self.pub_telemetry.publish(msg_telemetry)
+    
+    def publish_imu(self, parsed_nums):
+        """
+        Publish IMU data to ROS
+
+        :param imu_data: List of IMU data
+        :return:
+        """
+        try:
             # Create and send ros imu
             msg_imu = Imu()
             msg_imu.header.stamp = self.get_clock().now().to_msg()
-            msg_imu.header.frame_id = 'world'
+            msg_imu.header.frame_id = self.namespace_prefix+'imu0'
             msg_imu.orientation_covariance = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
             msg_imu.angular_velocity_covariance = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
             msg_imu.linear_acceleration_covariance = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
             # Big note about the following line: it is assumed that the roll and pitch are zero. In future work the roll and pitch should be estimated from the accelerometer data
-            quats = euler_to_quaternion(0.0,0.0,msg_heading.data)
+            heading = self.heading_state_estimator.process_magnetometer_data(parsed_nums[16], parsed_nums[17])
+            quats = euler_to_quaternion(0.0,0.0,heading)
             msg_imu.orientation.x = quats[0]
             msg_imu.orientation.y = quats[1]
             msg_imu.orientation.z = quats[2]
@@ -294,6 +323,21 @@ class Ros2ArduinoBridge(Node):
 
         except Exception as e:
             print(f"[WARN] callback_telemetry failed to interpret and/or send heading angle or IMU msg from sensordata '{[parsed_nums[16], parsed_nums[17]],e}'")
+    
+    def publish_heading(self, parsed_nums):
+        """
+        Publish heading data to ROS
+        """
+
+        try:   
+            # estimate heading and publish
+            msg_heading = Float32()
+            msg_heading.data = self.heading_state_estimator.process_magnetometer_data(parsed_nums[16], parsed_nums[17])
+            # index 16 and 17 of telemetry refer to x and y potential field measured by the BNO055 magnetometer
+            self.pub_heading.publish(msg_heading)
+        except Exception as e:
+            self.get_logger().warn(f"callback_telemetry failed to interpret and/or send heading angle '{[parsed_nums[16], parsed_nums[17]],e}'")
+
     def process_serial_message(self, message: str):
         """
         Evaluate serial message for meaning (e.g. telemetry, warning, or info) and resolve afterwards
