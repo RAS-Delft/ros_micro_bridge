@@ -124,7 +124,7 @@ class Ros2ArduinoBridge(Node):
         self.sub_reference_prio = self.create_subscription(JointState, f'reference/actuation_prio', self.callback_control_prio, 10)
 
         if self.get_parameter('enable_stream_microprocessor_serial').value:
-            self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry', 10)
+            self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry/micro_serial_stream', 10)
 
         if self.get_parameter('enable_stream_heading').value:
             self.pub_heading = self.create_publisher(Float32, f'state/yaw', 10)
