@@ -78,6 +78,7 @@ def get_value_from_jointstate(message:JointState,name_item:str,paramtype:int=0):
 				return np.nan
 	
 	# In case the specified item is not in the list
+	print(f"Item {name_item} not found in jointstate message")
 	return np.nan
 
 class Ros2ArduinoBridge(Node):
@@ -234,6 +235,9 @@ class Ros2ArduinoBridge(Node):
         sb_aft_angle = get_value_from_jointstate(control_input,'SB_aft_thruster_joint',paramtype:=0) # radians
         ps_aft_angle = get_value_from_jointstate(control_input,'PS_aft_thruster_joint',paramtype:=0) # radians
 
+        # Print angles
+        print(f"Angles unpacked from rosmsg: {sb_aft_angle}, {ps_aft_angle}")
+
         if not math.isnan(sb_aft_propeller):
             self.actuation[0] = sb_aft_propeller
         if not math.isnan(ps_aft_propeller):
@@ -250,7 +254,7 @@ class Ros2ArduinoBridge(Node):
 
         control_str = f"r{self.actuation[0]:.0f};{self.actuation[1]:.0f};{self.actuation[2]:.2f};{math.degrees(self.actuation[3]):.0f};{math.degrees(self.actuation[4]):.0f}\n"
         print(f"Control string: {control_str}")
-        
+
         self._ser.write(control_str.encode('utf-8'))
         self.diagnostics.track_num_actuation += 1
 
