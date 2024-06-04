@@ -68,7 +68,7 @@ def get_value_from_jointstate(message:JointState,name_item:str,paramtype:int=0):
 			# The specified item has been found in the list. 
 			# Return the value according to the specified paramtype
 			if paramtype == 0:
-				print(f"Position of {name_item} found in jointstate message with value {message.position[i]}")
+				print(f"Position of {name_item} found in jointstate message with value {message.position[i]} at position {i}")
 				return message.position[i]
 			elif paramtype == 1:
 				return message.velocity[i]
