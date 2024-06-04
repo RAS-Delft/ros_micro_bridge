@@ -245,8 +245,12 @@ class Ros2ArduinoBridge(Node):
         if not math.isnan(ps_aft_angle):
             self.actuation[4] = ps_aft_angle
 
-        control_str = f"r{self.actuation[0]:.0f};{self.actuation[1]:.0f};{self.actuation[2]:.2f};{math.degrees(self.actuation[3]):.0f};{math.degrees(self.actuation[4]):.0f}\n"
+        # Print actuation
+        print(f"Actuation unpacked from rosmsg: {self.actuation}")
 
+        control_str = f"r{self.actuation[0]:.0f};{self.actuation[1]:.0f};{self.actuation[2]:.2f};{math.degrees(self.actuation[3]):.0f};{math.degrees(self.actuation[4]):.0f}\n"
+        print(f"Control string: {control_str}")
+        
         self._ser.write(control_str.encode('utf-8'))
         self.diagnostics.track_num_actuation += 1
 
