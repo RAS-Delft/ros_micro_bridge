@@ -104,7 +104,7 @@ class Ros2ArduinoBridge(Node):
 
 
         # Not setting the port here, we want to open the port manually later
-        self._ser = serial.Serial(None, 115200, timeout=1)
+        self._ser = serial.Serial(None, 115200, timeout=0.02)
 
         self.msg_receiver_serial = MsgReceiver(self._ser)
         self.heading_state_estimator = HeadingStateEst(4, 1*math.pi)
