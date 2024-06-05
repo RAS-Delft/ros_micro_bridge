@@ -33,6 +33,9 @@ from ros_micro_bridge.global_state import GlobalState, Diagnostics
 from ros_micro_bridge.HeadingUtils import HeadingStateEst
 from ros_micro_bridge.serial_utils import MsgReceiver, reset_arduino, open_serial, auto_detect_serial
 
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
+
 ARDUINO_RUNTIME_TIMEOUT = 1000 * 1E6  # 1000 ms / 1 second
 ARDUINO_INIT_TIMEOUT = 6000 * 1E6  # 6000 ms / 6 seconds
 
@@ -87,6 +90,14 @@ class Ros2ArduinoBridge(Node):
         self.last_telem_message = 0
         self.last_actuation_reference_prio_message = 0
         super().__init__('ros_arduino_bridge', *args, **kwargs)
+
+        custom_qos_profile = QoSProfile(
+    		reliability=QoSReliabilityPolicy.BEST_EFFORT,
+    		history=QoSHistoryPolicy.KEEP_LAST,
+    		depth=1,
+    		durability=QoSDurabilityPolicy.VOLATILE
+		)
+
         self.actuation = [0.0,0.0,0.0,0.0,0.0]
 
         # If namespace is empty, throw warning. Common ones are e.g. RAS_TN_LB, RAS_TN_YE, RAS_GS, RAS_DELFIA_01 
@@ -119,17 +130,17 @@ class Ros2ArduinoBridge(Node):
         self.diagnostics = Diagnostics()
 
         self.get_logger().info("Start setting up subscribers and publishers")
-        self.sub_reference = self.create_subscription(JointState, f'reference/actuation', self.callback_control, 10)
-        self.sub_reference_prio = self.create_subscription(JointState, f'reference/actuation_prio', self.callback_control_prio, 10)
+        self.sub_reference = self.create_subscription(JointState, f'reference/actuation', self.callback_control, custom_qos_profile)
+        self.sub_reference_prio = self.create_subscription(JointState, f'reference/actuation_prio', self.callback_control_prio, custom_qos_profile)
 
         if self.get_parameter('enable_stream_microprocessor_serial').value:
-            self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry/micro_serial_stream', 10)
+            self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry/micro_serial_stream', custom_qos_profile)
 
         if self.get_parameter('enable_stream_heading').value:
-            self.pub_heading = self.create_publisher(Float32, f'state/yaw', 10)
+            self.pub_heading = self.create_publisher(Float32, f'state/yaw', custom_qos_profile)
 
         if self.get_parameter('enable_stream_imu').value:
-            self.pub_imu = self.create_publisher(Imu,'telemetry/imu',10)
+            self.pub_imu = self.create_publisher(Imu,'telemetry/imu',custom_qos_profile)
 
         self.get_logger().info("Done setting up subscribers and publishers")
         self.get_logger().info("Running main loop now")
