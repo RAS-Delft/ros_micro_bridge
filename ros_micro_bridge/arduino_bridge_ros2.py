@@ -82,7 +82,6 @@ def get_value_from_jointstate(message:JointState,name_item:str,paramtype:int=0):
 
 class Ros2ArduinoBridge(Node):
     def __init__(self, *args, **kwargs):
-        print("Ros_ArduinoBridge __init__ entering")
         self.pub_telemetry = None
         self.pub_heading = None
         self.last_telem_message = 0
@@ -164,20 +163,20 @@ class Ros2ArduinoBridge(Node):
 
         # Resetting Arduino after message timeout
         elif globs.global_state == GlobalState.ready and time.time_ns() - self.last_telem_message > ARDUINO_RUNTIME_TIMEOUT:
-            print(f"[WARN] Connection with Arduino seems lost "
+            self.get_logger().warn(f"Connection with Arduino seems lost "
                   f"(no message in {ARDUINO_RUNTIME_TIMEOUT / 1E6} ms), resetting.")
             self.last_telem_message = time.time_ns()
             reset_arduino(self._ser)
 
         # Resetting Arduino after first message connect timeout
         elif globs.global_state == GlobalState.waiting and time.time_ns() - self.last_telem_message > ARDUINO_INIT_TIMEOUT:
-            print(f"[WARN] Did not get first message from Arduino in {ARDUINO_INIT_TIMEOUT / 1E6} ms, resetting.")
+            self.get_logger().warn(f"Did not get first message from Arduino in {ARDUINO_INIT_TIMEOUT / 1E6} ms, resetting.")
             self.last_telem_message = time.time_ns()
             reset_arduino(self._ser)
 
         # Program shutdown
         if globs.global_state == GlobalState.shuttingDown:
-            print("[INFO] Shutdown Arduino and Python")
+            self.get_logger().info("Shutdown Arduino and Python")
             self.exit_loop()
             return False
 
@@ -263,7 +262,7 @@ class Ros2ArduinoBridge(Node):
             nums = message.split(";")
             parsed_nums = [float(x) for x in nums]
         except:
-            print(f"callback_telemetry failed to process serial_message '{message}'")
+            self.get_logger().warn(f"callback_telemetry failed to process serial_message '{message}'")
 
         # Publish telemetry data
         if self.get_parameter('enable_stream_microprocessor_serial').value:
@@ -322,7 +321,7 @@ class Ros2ArduinoBridge(Node):
             self.pub_imu.publish(msg_imu)
 
         except Exception as e:
-            print(f"[WARN] callback_telemetry failed to interpret and/or send heading angle or IMU msg from sensordata '{[parsed_nums[16], parsed_nums[17]],e}'")
+            self.get_logger().warn(f"[WARN] callback_telemetry failed to interpret and/or send heading angle or IMU msg from sensordata '{[parsed_nums[16], parsed_nums[17]],e}'")
     
     def publish_heading(self, parsed_nums):
         """
@@ -349,7 +348,7 @@ class Ros2ArduinoBridge(Node):
             if globs.global_state == GlobalState.waiting:
                 # Display if we successfully received a message after (re)set.
                 globs.global_state = GlobalState.ready
-                print("[INFO] Received first telemetry message, good to go.")
+                self.get_logger().info("[INFO] Received first telemetry message, good to go.")
 
             self.last_telem_message = time.time_ns()
             self.diagnostics.track_num_telemetry += 1
@@ -357,20 +356,16 @@ class Ros2ArduinoBridge(Node):
 
         # Arduino system message
         elif message[0] == '[':
-            print(f"[Arduino] {message}")
+            self.get_logger().info(f"[Arduino] {message}")
 
         # Error: Unexpected message
         else:
-            print(f"Unidentified serial message '{message}'")
+            self.get_logger().warn(f"Unidentified serial message '{message}'")
 
 def main(args=None):
     # We cannot use the rospy logger before the node is initialized.
-    print("Initializing ROS node...")
     rclpy.init(args=args)
-
     bridge = Ros2ArduinoBridge()
-
-    print("Done initializing ROS node")
 
     try:
         rclpy.spin(bridge)
