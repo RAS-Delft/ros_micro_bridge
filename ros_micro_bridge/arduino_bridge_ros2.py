@@ -137,7 +137,7 @@ class Ros2ArduinoBridge(Node):
             self.pub_telemetry = self.create_publisher(Float32MultiArray, f'telemetry/micro_serial_stream', custom_qos_profile)
 
         if self.get_parameter('enable_stream_heading').value:
-            self.pub_heading = self.create_publisher(Float32, f'state/yaw', custom_qos_profile)
+            self.pub_heading = self.create_publisher(Float32, f'telemetry/heading', custom_qos_profile)
 
         if self.get_parameter('enable_stream_imu').value:
             self.pub_imu = self.create_publisher(Imu,'telemetry/imu',custom_qos_profile)
